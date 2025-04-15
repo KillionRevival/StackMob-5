@@ -16,6 +16,7 @@ import uk.antiperson.stackmob.entity.death.DeathMethod;
 import uk.antiperson.stackmob.entity.death.DeathType;
 import uk.antiperson.stackmob.events.EventHelper;
 import uk.antiperson.stackmob.events.StackDeathEvent;
+import uk.antiperson.stackmob.events.StackDropItemEvent;
 import uk.antiperson.stackmob.utils.Utilities;
 
 import java.lang.reflect.InvocationTargetException;
@@ -72,10 +73,10 @@ public class DeathListener implements Listener {
         // Should probably investigate more...? How are the drops in the event correct.
         if (Utilities.isVersionAtLeast(Utilities.MinecraftVersion.V1_21) && stackEntity.getEntityConfig().isDropLootTables()) {
             int finalToMultiply = toMultiply;
-            Runnable runnable = () -> doDrops(stackEntity, finalToMultiply, event.getDrops());
+            Runnable runnable = () -> doDrops(stackEntity, finalToMultiply, event.getDrops(), event);
             sm.getScheduler().runTaskLater(stackEntity.getEntity(), runnable, 1);
         } else {
-            doDrops(stackEntity, toMultiply, event.getDrops());
+            doDrops(stackEntity, toMultiply, event.getDrops(), event);
         }
         event.setDroppedExp(experience);
         if (Utilities.isPaper() && event.isCancelled()) {
@@ -101,8 +102,14 @@ public class DeathListener implements Listener {
         }
     }
 
-    private void doDrops(StackEntity stackEntity, int toMultiply, List<ItemStack> drops) {
+    private void doDrops(
+            StackEntity stackEntity,
+            int toMultiply,
+            List<ItemStack> drops,
+            EntityDeathEvent event
+    ) {
         Map<ItemStack, Integer> map = stackEntity.getDrops().calculateDrops(toMultiply, drops);
+        EventHelper.callStackDropItemEvent(stackEntity, map, event);
         Drops.dropItems(stackEntity.getEntity().getLocation(), map);
     }
 
